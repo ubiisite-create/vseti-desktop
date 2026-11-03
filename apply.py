@@ -1,0 +1,102 @@
+# VSети: переносит название, значок и цвета в исходники Telegram Desktop.
+# Запуск: python apply.py <папка tdesktop>
+import os, re, shutil, sys
+
+here = os.path.dirname(os.path.abspath(__file__))
+root = sys.argv[1]
+T = os.path.join(root, 'Telegram')
+
+
+def edit(path, fn):
+    p = os.path.join(T, path)
+    with open(p, encoding='utf-8', newline='') as f:
+        s = f.read()
+    n = fn(s)
+    if n == s:
+        raise SystemExit('Не изменилось: ' + path)
+    with open(p, 'w', encoding='utf-8', newline='') as f:
+        f.write(n)
+    print('OK', path)
+
+
+# 1. Значки: все размеры делаются из двух исходных картинок
+from PIL import Image
+import io, struct
+full = Image.open(os.path.join(here, 'icon_full.png')).convert('RGBA')
+small = Image.open(os.path.join(here, 'icon_notext.png')).convert('RGBA')
+A = os.path.join(T, 'Resources', 'art')
+def ic(n):
+    return (small if n <= 64 else full).resize((n, n), Image.LANCZOS)
+for n in (16, 32, 48, 64, 128, 256, 512):
+    ic(n).save(os.path.join(A, 'icon%d.png' % n))
+    ic(n * 2).save(os.path.join(A, 'icon%d@2x.png' % n))
+ic(1024).save(os.path.join(A, 'icon_green.png'))
+ic(256).save(os.path.join(A, 'iconbig_green.png'))
+full.resize((1024, 1024), Image.LANCZOS).save(os.path.join(A, 'icon_round512@2x.png'))
+logo = Image.new('RGBA', (256, 256), (0, 0, 0, 0))
+logo.alpha_composite(full.resize((200, 200), Image.LANCZOS), (28, 28))
+logo.save(os.path.join(A, 'logo_256.png'))
+full.resize((256, 256), Image.LANCZOS).save(os.path.join(A, 'logo_256_no_margin.png'))
+sizes = (16, 24, 32, 48, 64, 128, 256)
+blobs = []
+for n in sizes:
+    b = io.BytesIO()
+    (small if n <= 48 else full).resize((n, n), Image.LANCZOS).save(b, 'PNG')
+    blobs.append(b.getvalue())
+ico = struct.pack('<HHH', 0, 1, len(sizes)); off = 6 + 16 * len(sizes); ent = b''
+for n, d in zip(sizes, blobs):
+    ent += struct.pack('<BBBBHHII', n % 256, n % 256, 0, 0, 1, 32, len(d), off); off += len(d)
+with open(os.path.join(A, 'icon256.ico'), 'wb') as f:
+    f.write(ico + ent + b''.join(blobs))
+print('OK значки')
+
+# 2. Цвета: тёмно-зелёная тема по умолчанию (из темы Night Green, перекрашенной под VSети)
+import zipfile, colorsys
+t = zipfile.ZipFile(os.path.join(T, 'Resources', 'night-green.tdesktop-theme')).read('colors.tdesktop-theme').decode()
+vals = {m.group(1): m.group(2) for m in re.finditer(
+    r'^\s*([A-Za-z0-9_]+)\s*:\s*(#[0-9a-fA-F]{6,8}|[A-Za-z0-9_]+)\s*;', t, re.M)}
+def rec(h):
+    hx = h[1:]; a = hx[6:8] if len(hx) == 8 else ''
+    r, g, b = [int(hx[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    H, S_, V = colorsys.rgb_to_hsv(r, g, b)
+    if S_ > 0.22 and 70 <= H * 360 <= 265: H = 148 / 360
+    elif V < 0.42: H = 150 / 360; S_ = min(0.85, 0.6 + S_); V = V * 0.6
+    R, G, B = [round(x * 255) for x in colorsys.hsv_to_rgb(H, S_, V)]
+    return '#%02x%02x%02x%s' % (R, G, B, a)
+fix = {'msgOutBg': '#0d4a2c', 'msgOutBgSelected': '#11603a'}
+pp = os.path.join(T, 'lib_ui', 'ui', 'colors.palette')
+out = []
+for ln in open(pp, encoding='utf-8', newline='').read().split('\n'):
+    m = re.match(r'^(\s*)([A-Za-z0-9_]+)(\s*:\s*)([^;]+)(;.*)$', ln)
+    if m and (m.group(2) in vals or m.group(2) in fix):
+        v = fix.get(m.group(2)) or vals[m.group(2)]
+        if v.startswith('#') and m.group(2) not in fix: v = rec(v)
+        ln = m.group(1) + m.group(2) + m.group(3) + v + m.group(5)
+    out.append(ln)
+open(pp, 'w', encoding='utf-8', newline='').write('\n'.join(out))
+print('OK цвета')
+
+# 3. Название программы и отдельная папка данных (не мешает Telegram на этом же ПК)
+edit('SourceFiles/core/version.h', lambda s: s
+     .replace('AppName = "Telegram Desktop"_cs', 'AppName = "VSeti Desktop"_cs')
+     .replace('AppId = "{53F49750-6209-4FBF-9CA8-7A333C87D1ED}"_cs',
+              'AppId = "{7B1D5E2A-4C3F-4E8B-9A61-5D2C0F3B8E47}"_cs'))
+edit('SourceFiles/platform/win/windows_app_user_model_id.cpp', lambda s: s
+     .replace('L"Telegram.TelegramDesktop.Store"', 'L"VSeti.VSetiDesktop.Store"')
+     .replace('L"Telegram.TelegramDesktop"', 'L"VSeti.VSetiDesktop"'))
+
+# 4. Не перехватывать ссылки tg:// у настоящего Telegram
+edit('SourceFiles/core/application.cpp', lambda s: s.replace(
+    'if (!OptionSkipUrlSchemeRegister.value()) {', 'if (false && !OptionSkipUrlSchemeRegister.value()) {', 1))
+
+# 5. Подписи exe-файлов
+for rc in ('Resources/winrc/Telegram.rc', 'Resources/winrc/Updater.rc'):
+    edit(rc, lambda s: s.replace('Telegram Desktop', 'VSeti').replace('"Telegram FZ-LLC"', '"VSeti"'))
+
+# 6. Тексты интерфейса: Telegram -> VSети (только значения, не ключи)
+def strings(s):
+    return re.sub(r'^("[^"]+"\s*=\s*")(.*)(";)([ \t\r]*)$',
+                  lambda m: m.group(1) + m.group(2).replace('Telegram', 'VSети') + m.group(3) + m.group(4),
+                  s, flags=re.M)
+edit('Resources/langs/lang.strings', strings)
+print('Готово')

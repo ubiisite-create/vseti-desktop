@@ -19,6 +19,13 @@ jobs:
         shell: cmd
 
     steps:
+      - name: Bigger page file.
+        uses: al-cheb/configure-pagefile-action@v1.4
+        with:
+          minimum-size: 16GB
+          maximum-size: 40GB
+          disk-root: "C:"
+
       - name: Prepare directories.
         run: |
           mkdir %userprofile%\TBuild\Libraries
@@ -154,7 +161,7 @@ jobs:
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON
-          cmake --build ..\out --config Debug --parallel
+          cmake --build ..\out --config Debug --parallel 2
 
       - name: Pack.
         run: |

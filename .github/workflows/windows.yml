@@ -156,18 +156,20 @@ jobs:
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
           call configure.bat x64 qt6 ^
-          -D TDESKTOP_API_TEST=ON ^
+          -D TDESKTOP_API_ID=4 ^
+          -D TDESKTOP_API_HASH=014b35b6184100b085b0d0572f9b5103 ^
           -D CMAKE_CONFIGURATION_TYPES=Debug ^
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON
-          cmake --build ..\out --config Debug --parallel 2
+          cmake --build ..\out --config Debug --parallel 1 -- /p:CL_MPCount=1 /p:UseStructuredOutput=false /nodeReuse:false
 
       - name: Pack.
         run: |
           set OUT=%TBUILD%\%REPO_NAME%\out\Debug
           mkdir VSeti
           copy %OUT%\Telegram.exe VSeti\VSeti.exe
+          if exist %OUT%\modules xcopy /E /I /Y %OUT%\modules VSeti\modules
 
       - uses: actions/upload-artifact@v4
         with:

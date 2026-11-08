@@ -100,3 +100,26 @@ def strings(s):
                   s, flags=re.M)
 edit('Resources/langs/lang.strings', strings)
 print('Готово')
+
+# 7. Свой сервер VSети вместо серверов Telegram (как в Android: 51.250.73.233:10443) и его ключ
+VS_KEY = r"""-----BEGIN RSA PUBLIC KEY-----\n\
+MIIBCgKCAQEAqabVavdmO84huetgow/UJPGp+WUAVyEZdWTqEOflNKmL2FcrrJZe\n\
+NwMFFgMo3IVHTE5A51aR5xu9A8XMwGvuwrmj13WYGEvx2OmMsG3ZPdREcfxaI6Ij\n\
+Sc8IrvP3e5BRs1zx7usEsdeHaFB0uqzgoQUXz6IBBksqREwChjhEnv8QpFGIDGPj\n\
+i1Rvn/6AH9tH7jeU9G5FcGdFOSrikyjF4x6YYKTSHP5txqAyAx8Zr44whb6or7Vf\n\
++PTwhDKFNNHbZ+55BBBgHiD8Lepuya3BC6AKGC4tvr1ViqcZp2wi/vJdE7vkxCoM\n\
+uXULvX5wRv65Xvtq5+yQwuOR1y9hiNShUwIDAQAB\n\
+-----END RSA PUBLIC KEY-----\n"""
+def dcs(s):
+    s = re.sub(r'const BuiltInDc kBuiltInDcs\[\] = \{.*?\};',
+               'const BuiltInDc kBuiltInDcs[] = {\n\t{ 1, "51.250.73.233", 10443 },\n};', s, count=1, flags=re.S)
+    s = re.sub(r'const BuiltInDc kBuiltInDcsIPv6\[\] = \{.*?\};',
+               'const BuiltInDc kBuiltInDcsIPv6[] = {\n\t{ 1, "51.250.73.233", 10443 },\n};', s, count=1, flags=re.S)
+    s = re.sub(r'const char \*kPublicRSAKeys\[\] = \{ ".*?" \};',
+               lambda m: 'const char *kPublicRSAKeys[] = { "\\\n' + VS_KEY + '" };', s, count=1, flags=re.S)
+    return s
+edit('SourceFiles/mtproto/mtproto_dc_options.cpp', dcs)
+
+# 8. Сервер Teamgram понимает схему до слоя 230 (как в Android)
+edit('SourceFiles/mtproto/session_private.cpp', lambda s: s.replace('push_back(kCurrentLayer)', 'push_back(230 /* VSети */)'))
+print('Готово: сервер')

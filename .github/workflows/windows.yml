@@ -22,9 +22,18 @@ jobs:
       - name: Bigger page file.
         uses: al-cheb/configure-pagefile-action@v1.4
         with:
-          minimum-size: 16GB
-          maximum-size: 40GB
-          disk-root: "C:"
+          minimum-size: 8GB
+          maximum-size: 16GB
+          disk-root: "D:"
+
+      - name: Free disk space on C.
+        shell: pwsh
+        run: |
+          Get-PSDrive C,D | Format-Table Name,Used,Free
+          foreach ($p in @('C:\Android','C:\hostedtoolcache\windows\CodeQL','C:\hostedtoolcache\windows\Ruby','C:\hostedtoolcache\windows\PyPy','C:\hostedtoolcache\windows\go','C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk','C:\Program Files\Microsoft SQL Server','C:\selenium','C:\Miniconda','C:\tools\php','C:\mysql*','C:\Program Files\PostgreSQL','C:\Program Files\MongoDB')) {
+            Get-Item $p -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+          }
+          Get-PSDrive C,D | Format-Table Name,Used,Free
 
       - name: Prepare directories.
         run: |

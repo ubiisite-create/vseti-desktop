@@ -171,7 +171,7 @@ jobs:
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=ON
-          cmake --build ..\out --config Debug --parallel 1 -- /p:CL_MPCount=1 /p:UseStructuredOutput=false /nodeReuse:false
+          cmake --build ..\out --config Debug --parallel 2 -- /p:CL_MPCount=2 /p:UseStructuredOutput=false /nodeReuse:false
 
       - name: Pack.
         run: |

@@ -179,6 +179,8 @@ jobs:
           mkdir VSeti
           copy %OUT%\Telegram.exe VSeti\VSeti.exe
           if exist %OUT%\modules xcopy /E /I /Y %OUT%\modules VSeti\modules
+          curl.exe -sSL -o ru_src.strings https://translations.telegram.org/ru/tdesktop/export
+          python vsd\ru_lang.py ru_src.strings VSeti\vseti_ru_RU.strings
 
       - uses: actions/upload-artifact@v4
         with:

@@ -123,3 +123,32 @@ edit('SourceFiles/mtproto/mtproto_dc_options.cpp', dcs)
 # 8. Сервер Teamgram понимает схему до слоя 230 (как в Android)
 edit('SourceFiles/mtproto/session_private.cpp', lambda s: s.replace('push_back(kCurrentLayer)', 'push_back(230 /* VSети */)'))
 print('Готово: сервер')
+
+# 9. Главный сервер — №1 (у Telegram по умолчанию №2, у нас он один)
+edit('SourceFiles/mtproto/mtp_instance.h', lambda s: s.replace('static constexpr auto kDefaultMainDc = 2;', 'static constexpr auto kDefaultMainDc = 1; // VSети'))
+
+# 10. Не искать «запасные» адреса серверов Telegram через Google/Firebase
+edit('SourceFiles/mtproto/config_loader.cpp', lambda s: re.sub(
+    r'(void ConfigLoader::refreshSpecialLoader\(\) \{(\r?\n))', lambda m: m.group(1) + '\tif (true) { _specialLoader.reset(); return; } // VSети: только свой сервер' + m.group(2), s, count=1))
+
+# 11. Заголовок окна: VSети вместо Telegram
+edit('SourceFiles/window/main_window.cpp', lambda s: s.replace('u"Telegram"_q', 'u"VSети"_q'))
+edit('SourceFiles/core/crash_report_window.cpp', lambda s: s.replace('u"Telegram"_q', 'u"VSети"_q'))
+
+# 12. Значок в центре QR на экране входа: значок VSети вместо самолётика
+QR_OLD = ("\t\tp.setBrush(QrActiveColor());\n\t\tp.setPen(Qt::NoPen);\n"
+          "\t\tp.drawEllipse(QRect(QPoint(), size));\n"
+          "\t\tst::introQrPlane.paintInCenter(p, QRect(QPoint(), size));")
+QR_NEW = ("\t\t// VSети: свой значок\n"
+          "\t\tp.drawImage(QRect(QPoint(), size), QImage(u\":/gui/art/logo_256_no_margin.png\"_q));")
+edit('SourceFiles/intro/intro_qr.cpp', lambda s: re.sub(
+    r'p\.setBrush\(QrActiveColor\(\)\);\s*p\.setPen\(Qt::NoPen\);\s*p\.drawEllipse\(QRect\(QPoint\(\), size\)\);\s*st::introQrPlane\.paintInCenter\(p, QRect\(QPoint\(\), size\)\);',
+    lambda m: 'p.drawImage(QRect(QPoint(), size), QImage(u":/gui/art/logo_256_no_margin.png"_q)); // VSети: свой значок', s, count=1))
+print('Готово: сервер №1, заголовок, QR')
+
+# 13. Русский язык с первого запуска: встроенный перевод (файл vseti_ru_RU.strings рядом с VSeti.exe)
+edit('SourceFiles/storage/localstorage.cpp', lambda s: re.sub(
+    r'(void readLangPack\(\) \{\s*FileReadDescriptor langpack;\s*if \(!_langPackKey \|\| !ReadEncryptedFile\(langpack, _langPackKey, _basePath, SettingsKey\)\) \{)',
+    lambda m: m.group(1) + '\n\t\tconst auto vsRu = cExeDir() + u"vseti_ru_RU.strings"_q; // VSети: русский по умолчанию\n\t\tif (QFileInfo::exists(vsRu)) {\n\t\t\tLang::GetInstance().switchToCustomFile(vsRu);\n\t\t}',
+    s, count=1))
+print('Готово: русский язык')

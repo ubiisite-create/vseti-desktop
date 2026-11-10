@@ -146,9 +146,10 @@ edit('SourceFiles/intro/intro_qr.cpp', lambda s: re.sub(
     lambda m: 'p.drawImage(QRect(QPoint(), size), QImage(u":/gui/art/logo_256_no_margin.png"_q)); // VSети: свой значок', s, count=1))
 print('Готово: сервер №1, заголовок, QR')
 
-# 13. Русский язык с первого запуска: встроенный перевод (файл vseti_ru_RU.strings рядом с VSeti.exe)
-edit('SourceFiles/storage/localstorage.cpp', lambda s: re.sub(
-    r'(void readLangPack\(\) \{\s*FileReadDescriptor langpack;\s*if \(!_langPackKey \|\| !ReadEncryptedFile\(langpack, _langPackKey, _basePath, SettingsKey\)\) \{)',
-    lambda m: m.group(1) + '\n\t\tconst auto vsRu = cExeDir() + u"vseti_ru_RU.strings"_q; // VSети: русский по умолчанию\n\t\tif (QFileInfo::exists(vsRu)) {\n\t\t\tLang::GetInstance().switchToCustomFile(vsRu);\n\t\t}',
+# 13. Русский язык с первого запуска: встроенный перевод (файл vseti_ru_RU.strings рядом с VSeti.exe).
+# Включается сразу после запуска хранилища, если выбран не наш файл (в т.ч. при первом запуске).
+edit('SourceFiles/core/application.cpp', lambda s: re.sub(
+    r'(void Application::startLocalStorage\(\) \{\s*Ui::GL::DetectLastCheckCrash\(\);\s*Local::start\(\);)',
+    lambda m: m.group(1) + '\n\t{ // VSети: русский по умолчанию\n\t\tconst auto vsRu = cExeDir() + u"vseti_ru_RU.strings"_q;\n\t\tif (Lang::GetInstance().id() != Lang::CustomLanguageId() && QFileInfo::exists(vsRu)) {\n\t\t\tLang::GetInstance().switchToCustomFile(vsRu);\n\t\t}\n\t}',
     s, count=1))
 print('Готово: русский язык')

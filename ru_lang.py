@@ -6,7 +6,7 @@ if '"lng_' not in s:
     raise SystemExit('Русский перевод не скачался')
 def fix(m):
     v = m.group(2)
-    v = v.replace('Telegram Premium', 'VSети Premium').replace('Telegram', 'VSети').replace('Телеграм', 'VSети')
+    v = v.replace('Telegram Premium', 'VSети Premium').replace('Telegram', 'VSети').replace('Телеграм', 'VSети').replace('официальный клиент', 'мессенджер')
     return m.group(1) + v + m.group(3)
 s = re.sub(r'^("[^"]+"\s*=\s*")(.*)(";\s*)$', fix, s, flags=re.M)
 open(dst, 'w', encoding='utf-8', newline='\n').write(s)

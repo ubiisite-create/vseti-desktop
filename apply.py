@@ -153,3 +153,16 @@ edit('SourceFiles/core/application.cpp', lambda s: re.sub(
     lambda m: m.group(1) + '\n\t{ // VSети: русский по умолчанию\n\t\tconst auto vsRu = cExeDir() + u"vseti_ru_RU.strings"_q;\n\t\tif (Lang::GetInstance().id() != Lang::CustomLanguageId() && QFileInfo::exists(vsRu)) {\n\t\t\tLang::GetInstance().switchToCustomFile(vsRu);\n\t\t}\n\t}',
     s, count=1))
 print('Готово: русский язык')
+
+# 14. Стартовый экран: название VSети вместо «Telegram Desktop» и значок VSети вместо самолётика
+edit('SourceFiles/intro/intro_start.cpp', lambda s: s.replace('setTitleText(rpl::single(u"Telegram Desktop"_q));', 'setTitleText(rpl::single(u"VSети"_q));'))
+edit('SourceFiles/intro/intro_step.cpp', lambda s: s.replace(
+    '\tst::introCoverIcon.paint(p, planeLeft, planeTop, width());',
+    '\t{ // VSети: свой значок вместо самолётика\n'
+    '\t\tstatic const auto vsLogo = QImage(u":/gui/art/logo_256_no_margin.png"_q);\n'
+    '\t\tconst auto sz = st::introCoverIcon.height();\n'
+    '\t\tconst auto cx = planeLeft + st::introCoverIcon.width() / 2;\n'
+    '\t\tp.setRenderHint(QPainter::SmoothPixmapTransform);\n'
+    '\t\tp.drawImage(QRect(cx - sz / 2, planeTop, sz, sz), vsLogo);\n'
+    '\t}'))
+print('Готово: стартовый экран')

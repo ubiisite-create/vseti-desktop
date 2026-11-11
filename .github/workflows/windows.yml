@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 360
 
     env:
-      TD_REF: v7.3.4
+      TD_REF: v7.3.0
       REPO_NAME: tdesktop
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
 

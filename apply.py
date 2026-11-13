@@ -166,3 +166,10 @@ edit('SourceFiles/intro/intro_step.cpp', lambda s: s.replace(
     '\t\tp.drawImage(QRect(cx - sz / 2, planeTop, sz, sz), vsLogo);\n'
     '\t}'))
 print('Готово: стартовый экран')
+
+# 15. Ссылки: t.me / telegram.me — это настоящий Telegram, открываются в браузере;
+#     свои ссылки me.vsseti.ru/имя и vsseti.ru/имя открываются внутри VSети (кроме файлов и разделов сайта)
+edit('SourceFiles/core/local_url_handlers.cpp', lambda s: s.replace(
+    r'regex_match(u"^(https?://)?(www\\.)?(telegram\\.(me|dog)|t\\.me)/(.+)$"_q, url, matchOptions);',
+    r'regex_match(u"^(https?://)?(www\\.)?((me\\.)?vsseti\\.ru)/(?!(?:dl|app|fn|test|admin|me|api|messenger|privacy|terms|help)(?:[/?#]|$))(?![^/?#]*\\.)(.+)$"_q, url, matchOptions);'))
+print('Готово: ссылки')
